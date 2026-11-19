@@ -1512,20 +1512,6 @@ const UI = {
     if (this._eventsBound) return;
     this._eventsBound = true;
 
-    const vp = document.getElementById('storyViewport');
-    if (vp && typeof vp.addEventListener === 'function') {
-      vp.addEventListener('scroll', () => {
-        if (this.choiceAutoPopped) return;
-        if (vp.scrollHeight <= vp.clientHeight + 24) return;
-        if (vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 24) {
-          if (!this.hasBlockingModal()) {
-            this.choiceAutoPopped = true;
-            this.openChoiceModal();
-          }
-        }
-      }, { passive: true });
-    }
-
     const bindBackdropClose = (id, closer) => {
       const el = document.getElementById(id);
       if (el && typeof el.addEventListener === 'function') {
@@ -1667,13 +1653,28 @@ const UI = {
     document.getElementById('stageLocation').textContent = `📍 ${scene.location}`;
     document.getElementById('stageTime').textContent = `⏳ ${scene.time}`;
 
+    const choices = scene.choices();
+    const hasWidget = typeof scene.customWidget === 'function';
+    const enabledChoices = choices.filter(c => c && !c.disabled);
+    const isSingleContinue = enabledChoices.length === 1 && !hasWidget;
+
+    const topChoiceBtn = document.getElementById('btnTopChoice');
+    if (topChoiceBtn) topChoiceBtn.classList.toggle('hidden', isSingleContinue);
+
     const vp = document.getElementById('storyViewport');
-    const triggerHtml = `
-      <div id="chapterEndTrigger" class="chapter-end-trigger">
-        <div class="chapter-end-line">—— 本节完 · 面临抉择 ——</div>
-        <button id="btnOpenChoices" type="button" class="open-choices-btn">⚔️ 面临抉择 · 展开选项</button>
-      </div>
-    `;
+    const triggerHtml = isSingleContinue
+      ? `
+        <div id="chapterEndTrigger" class="chapter-end-trigger">
+          <div class="chapter-end-line">—— 本节完 ——</div>
+          <button id="btnOpenChoices" type="button" class="open-choices-btn">下一页 · ${enabledChoices[0].label} →</button>
+        </div>
+      `
+      : `
+        <div id="chapterEndTrigger" class="chapter-end-trigger">
+          <div class="chapter-end-line">—— 本节完 · 面临抉择 ——</div>
+          <button id="btnOpenChoices" type="button" class="open-choices-btn">⚔️ 面临抉择 · 展开选项</button>
+        </div>
+      `;
     vp.innerHTML = scene.paragraphs() + triggerHtml;
 
     const bindKeywordEl = (el) => {
@@ -1696,15 +1697,21 @@ const UI = {
 
     const openBtn = document.getElementById('btnOpenChoices');
     if (openBtn && typeof openBtn.addEventListener === 'function') {
-      openBtn.addEventListener('click', () => UI.openChoiceModal());
+      openBtn.addEventListener('click', () => {
+        if (isSingleContinue) {
+          SoundFX.click();
+          enabledChoices[0].action();
+        } else {
+          UI.openChoiceModal();
+        }
+      });
     }
 
     const deck = document.getElementById('actionDeck');
     let html = '';
-    if (typeof scene.customWidget === 'function') {
+    if (hasWidget) {
       html += scene.customWidget();
     }
-    const choices = scene.choices();
     choices.forEach((ch, idx) => {
       const styleClass = ch.style === 'trump-card' ? 'trump-card' : (ch.style === 'bl-route' ? 'bl-route' : '');
       html += `

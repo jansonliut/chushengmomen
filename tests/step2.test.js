@@ -149,13 +149,12 @@ test('Playwright 三视口（360x640 / 390x844 / 768x1024）断网冒烟、正�
       await page.locator('#btnCloseClue').click();
       await page.locator('#clueModal').waitFor({ state: 'hidden' });
 
-      // 3. 遇到文末选项弹框（滚动触发或点击文末展开按钮），验证 ✕ 可关闭与重开
+      // 3. 滑到底部不应自动弹窗打断阅读，仅主动点击文末按钮才弹出抉择框，且可点 ✕ 关闭
       await page.locator('#btnOpenChoices').scrollIntoViewIfNeeded();
       await page.waitForTimeout(150);
       const isChoiceOpenAfterScroll = await page.evaluate(() => !document.getElementById('choiceModal').classList.contains('hidden'));
-      if (!isChoiceOpenAfterScroll) {
-        await page.locator('#btnOpenChoices').click();
-      }
+      assert.equal(isChoiceOpenAfterScroll, false, `${vp.name} 滑到底部不应自动弹出抉择框`);
+      await page.locator('#btnOpenChoices').click();
       await assertVisibleAndClickable(page, '#choiceModal .modal-card', vp);
       await assertVisibleAndClickable(page, '#btnCloseChoices', vp);
       if (vp.name === 'phone') {
@@ -223,6 +222,18 @@ test('Playwright 三视口（360x640 / 390x844 / 768x1024）断网冒烟、正�
       assert.equal(act2Text.includes('养蛊') || act2Text.includes('刘信'), false, '初见玉素真不应剧透后续审讯内容');
       await page.locator('#btnCloseClue').click();
       await page.locator('#clueModal').waitFor({ state: 'hidden' });
+
+      // 6. 单选项且无交互面板的过场页应隐藏顶栏抉择按钮，文末直接“下一页”跳转，不弹出单选项框
+      await page.evaluate(() => window.Game.go('inner_refine'));
+      const topChoiceHidden = await page.evaluate(() => document.getElementById('btnTopChoice').classList.contains('hidden'));
+      assert.equal(topChoiceHidden, true, `${vp.name} 单选项页应隐藏顶栏抉择按钮`);
+      const nextBtnText = await page.locator('#btnOpenChoices').textContent();
+      assert.ok(nextBtnText.startsWith('下一页 ·'), `单选项页文末按钮应直接显示“下一页”，实际: ${nextBtnText}`);
+      await page.locator('#btnOpenChoices').scrollIntoViewIfNeeded();
+      await page.locator('#btnOpenChoices').click();
+      const choiceModalHiddenAfterSingle = await page.evaluate(() => document.getElementById('choiceModal').classList.contains('hidden'));
+      assert.equal(choiceModalHiddenAfterSingle, true, '单选项页点下一页不应弹出抉择框');
+      await assertVisibleAndClickable(page, '#deathModal .modal-card', vp);
 
       assert.equal(pageErrors.length, 0, `${vp.name} 交互全流程不应产生 JS 错误`);
       await context.close();
