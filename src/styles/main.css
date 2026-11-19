@@ -317,8 +317,9 @@ button {
   font-size: 18px;
 }
 
-/* 正文高亮可点击关键词 */
-.kw-clue {
+/* 正文高亮可点击关键词与人物 */
+.kw-clue,
+.kw-char {
   color: #f3d27a;
   border-bottom: 1px dashed rgba(212, 175, 55, 0.78);
   cursor: pointer;
@@ -328,24 +329,29 @@ button {
   font-weight: 600;
   touch-action: manipulation;
 }
-.kw-clue:hover {
+.kw-clue:hover,
+.kw-char:hover {
   background: rgba(212, 175, 55, 0.16);
   color: #fff3c4;
 }
-.kw-clue.collected {
+.kw-clue.collected,
+.kw-char.collected {
   color: #c9b27c;
   border-bottom: 1px solid rgba(212, 175, 55, 0.35);
 }
-.kw-clue.danger {
+.kw-clue.danger,
+.kw-char.danger {
   color: #fca5a5;
   border-bottom-color: rgba(239, 68, 68, 0.78);
 }
-.kw-clue.danger:hover {
+.kw-clue.danger:hover,
+.kw-char.danger:hover {
   background: rgba(185, 28, 28, 0.24);
   color: #fee2e2;
 }
 @media (hover: none) {
-  .kw-clue:hover {
+  .kw-clue:hover,
+  .kw-char:hover {
     background: transparent;
   }
 }

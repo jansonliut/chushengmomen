@@ -298,6 +298,37 @@ const NPCS_DB = {
   }
 };
 
+const CHAR_INTRO_DB = {
+  heiyi_daoren: {
+    id: 'heiyi_daoren',
+    badge: '👤 人物介绍',
+    tag: '初圣宗执册人',
+    title: '高台黑衣道人',
+    text: '主持外门削峰血奉点名的黑衣道人。身旁悬浮命灯，神色阴戾冷漠，手握朱笔名册，视满场血奉记名弟子如待估价的耗材。'
+  },
+  chenliang: {
+    id: 'chenliang',
+    badge: '👤 人物介绍',
+    tag: '同批血奉少年',
+    title: '陈良',
+    text: '与你同批入宗的陈国血奉记名弟子。唇红齿白、灵气逼人，在满地病弱少年中最为出挑，却因“死后比活着更有价值”被当场朱笔划杀。'
+  },
+  yusuzhen: {
+    id: 'yusuzhen',
+    badge: '👤 人物介绍',
+    tag: '合欢殿妖冶师兄',
+    title: '玉素真',
+    text: '外门合欢殿资深弟子。身着暗红高开叉广袖长袍，眼波流转、吐息勾魂，专门在殿前物色生得清秀俊逸的新晋师弟，笑称合欢殿的考验最是快活轻松。'
+  },
+  liuxin: {
+    id: 'liuxin',
+    badge: '👤 人物介绍',
+    tag: '补天峰接引师兄',
+    title: '刘信',
+    text: '补天峰正式弟子，链气六层（中期巅峰）。正是削峰点名那位阴戾黑衣道人，在你三日破境后却春风和煦、宛如知心兄长，手把手为你打点四殿最好的新人福利。'
+  }
+};
+
 const ENDINGS_DB = {
   BE0: {
     code: 'BE0',
@@ -791,7 +822,7 @@ const SCENES = {
         ${realmWarn}
         <p class="story-para">魔门，初圣宗。重重云海波涛如怒，唯独你脚下这座山峰被凭空削去了山尖，只留一片冰冷平地。你刚穿越到陈国“血奉”记名弟子吕阳身上，一捏手臂全是软肉，胸腔一阵撕裂般的剧痛——这具身子早已<span class="kw-clue danger" data-clue="hualiu">【病入膏肓】</span>，眼看没几天活头。</p>
         <p class="story-para">绝望之际，一卷光影展开在眼前：【百世书 · 残留页数 ${Game.meta.pagesLeft}】。没有加点按钮，只有死后重开的冷酷契约：从前世的宝物、修为、寿命中任选其一，或放弃一切觉醒天赋。</p>
-        <p class="story-para">“被叫到名字的人走到我面前。”高台上，一位捧着名册、身旁悬浮命灯的<span class="kw-clue" data-clue="liuxin_identity">【黑衣道人】</span>阴戾开口。他先叫了你身旁唇红齿白、灵气逼人的少年<span class="kw-clue danger" data-clue="chenliang_death">【陈良】</span>。道人看着聪慧行礼的少年满面惊艳，赞叹一声“好一个天生灵童”，提笔在名册上轻轻一划——</p>
+        <p class="story-para">“被叫到名字的人走到我面前。”高台上，一位捧着名册、身旁悬浮命灯的<span class="kw-char" data-char="heiyi_daoren">【黑衣道人】</span>阴戾开口。他先叫了你身旁唇红齿白、灵气逼人的少年<span class="kw-clue kw-char danger" data-clue="chenliang_death" data-char="chenliang">【陈良】</span>。道人看着聪慧行礼的少年满面惊艳，赞叹一声“好一个天生灵童”，提笔在名册上轻轻一划——</p>
         <p class="story-para">噗通！毫无征兆，陈良翻着白眼直挺挺扑倒在地，气息全无。黑衣道人笑得格外畅快：“血液皮肉送炼丹殿，骨头魂魄送炼宝殿，五脏六腑送御兽殿！圣宗看重价值，他死后更有价值，所以才死了。”</p>
         <p class="story-para">下一秒，那双蛇信般的眼睛落在了你身上：“下一个，吕阳。”他修长冰冷的手指勾起你的下巴端详片刻，又顺着衣袖捏住你的腕骨试探筋骨。</p>
       `;
@@ -862,7 +893,7 @@ const SCENES = {
     paragraphs() {
       return `
         <p class="story-para">黑衣道人捏完你的腕骨，果然露出几分失望——在他眼里，你除了这张清秀俊逸的脸庞外一无是处。“去合欢殿吧。”你领了透明命牌与一本《阴阳大乐赋》，随着老杂役行至一座朱檐魅影的殿宇前。</p>
-        <p class="story-para">殿前负手立着一位身着暗红广袖长袍的男人。那长袍的侧腰开叉竟直逼胯骨，他见新弟子们偷偷打量过来，非但不避，反而纤长指尖一挑，慢悠悠拨开猩红衣摆。白皙劲瘦的腰胯间，一枚玉牌正随着他步履轻晃，刻着三个字：<span class="kw-clue danger" data-clue="yusuzhen_secret">【玉素真】</span>。</p>
+        <p class="story-para">殿前负手立着一位身着暗红广袖长袍的男人。那长袍的侧腰开叉竟直逼胯骨，他见新弟子们偷偷打量过来，非但不避，反而纤长指尖一挑，慢悠悠拨开猩红衣摆。白皙劲瘦的腰胯间，一枚玉牌正随着他步履轻晃，刻着三个字：<span class="kw-char danger" data-char="yusuzhen">【玉素真】</span>。</p>
         <p class="story-para">“哟，这一批倒有个生得这么招人疼的小师弟。”玉素真眼眸骤亮，修长身姿如水蛇般贴近，根本不加掩饰眼底的垂涎，“随我来吧，师兄亲自给你讲讲合欢殿的规矩。”</p>
         <p class="story-para">踏入僻静回廊，他忽地倾身凑近，一口滚烫兰香的热气直直喷在你敏感的耳根上，骨节分明却微凉的手指顺着你的后颈滑入领口，像情人低语：“入了我合欢殿不用吃苦受罪，咱们的考验最是快活——那就是，双修。”</p>
         <p class="story-para story-muted">话音未落，他竟不顾光天化日，直接扣住你的腰将你拽入静室、反手扯开了你的衣襟！</p>
@@ -1112,7 +1143,7 @@ const SCENES = {
     paragraphs() {
       const canAmbush = Game.hasMetaItem('xueyang_jianwan');
       return `
-        <p class="story-para">推开合欢殿静室的门，你一眼撞进了一双笑眯眯的眸子。竟是削峰点名那位阴戾黑衣道人——<span class="kw-clue" data-clue="liuxin_identity">【刘信】</span>。</p>
+        <p class="story-para">推开合欢殿静室的门，你一眼撞进了一双笑眯眯的眸子。竟是削峰点名那位阴戾黑衣道人——<span class="kw-clue kw-char" data-clue="liuxin_identity" data-char="liuxin">【刘信】</span>。</p>
         <p class="story-para">“整整三日，连门外都听得见玉素真的叫声。师弟好体力，未来必是我圣宗栋梁。”他拍着你的肩，语气亲昵得像亲兄长，领你改录内门命灯、领 50 贡献点，又带你去四殿白嫖新人四件套。</p>
         <p class="story-para">在炼宝殿，执事陈皓殷勤推开一间修炼静室，里面苦修三年的师兄猛地睁眼狂喜大喊“道爷我成啦！”——下一瞬却轰然炸成满天血肉，倒卷融入骷髅，化作一口晶莹剔透的<span class="kw-clue danger" data-clue="guyu_sword">【骨玉剑】</span>落入你手中。刘信甚至专门叮嘱执事：“把最上乘的法器拿给吕师弟！”</p>
         <p class="story-para">安顿进补天峰偏僻洞府后，刘信亲切地将一枚玉简塞进你手心，指腹有意无意擦过你的掌纹：“这是我补天峰秘传《先天道书》上半部。炼成后可逆反先天、化去肉身成先天真炁，道法难伤。师弟好生闭关，过几日师兄再来看你。”</p>
@@ -1581,6 +1612,22 @@ const UI = {
     document.getElementById('clueModalTag').textContent = clue.tag;
     document.getElementById('clueModalTitle').textContent = clue.title;
     document.getElementById('clueModalText').textContent = clue.text;
+    const btnConfirm = document.getElementById('btnConfirmClue');
+    if (btnConfirm) btnConfirm.textContent = '收入手札';
+    const m = document.getElementById('clueModal');
+    if (m) m.classList.remove('hidden');
+  },
+
+  openCharIntroModal(charKey) {
+    const info = CHAR_INTRO_DB[charKey];
+    if (!info) return;
+    SoundFX.click();
+    document.getElementById('clueModalBadge').textContent = info.badge;
+    document.getElementById('clueModalTag').textContent = info.tag;
+    document.getElementById('clueModalTitle').textContent = info.title;
+    document.getElementById('clueModalText').textContent = info.text;
+    const btnConfirm = document.getElementById('btnConfirmClue');
+    if (btnConfirm) btnConfirm.textContent = '知晓';
     const m = document.getElementById('clueModal');
     if (m) m.classList.remove('hidden');
   },
@@ -1629,11 +1676,23 @@ const UI = {
     `;
     vp.innerHTML = scene.paragraphs() + triggerHtml;
 
-    vp.querySelectorAll('.kw-clue').forEach(el => {
+    const bindKeywordEl = (el) => {
+      if (!el || el._kwBound) return;
+      el._kwBound = true;
       const cid = el.dataset.clue;
-      if (Game.hasClue(cid)) el.classList.add('collected');
-      el.addEventListener('click', () => Game.unlockClue(cid, false));
-    });
+      const charKey = el.dataset.char;
+      if (cid && Game.hasClue(cid)) el.classList.add('collected');
+      el.addEventListener('click', () => {
+        if (charKey) {
+          if (cid) Game.unlockClue(cid, true);
+          UI.openCharIntroModal(charKey);
+        } else if (cid) {
+          Game.unlockClue(cid, false);
+        }
+      });
+    };
+    vp.querySelectorAll('.kw-clue').forEach(bindKeywordEl);
+    vp.querySelectorAll('.kw-char').forEach(bindKeywordEl);
 
     const openBtn = document.getElementById('btnOpenChoices');
     if (openBtn && typeof openBtn.addEventListener === 'function') {

@@ -49,8 +49,16 @@ test('步骤 2 去外链与三类弹框改造后，通关扫描与锁定基线 1
   assert.equal(report.summary.totalDeadEnds, 0);
   assert.equal(report.summary.totalInvalidTargets, 0);
 
+  // 因移除第一幕【黑衣道人】与第二幕初见【玉素真】上的剧透线索触发点，前两幕减少 27 个提前携线索态（13728 -> 13701）
+  assert.equal(report.summary.bfsVisitedStates, 13701, '去剧透后跨周目 BFS 搜索态应精确为 13701');
+
+  const actualSummaryNoBfsCount = { ...report.summary };
+  delete actualSummaryNoBfsCount.bfsVisitedStates;
+  const baselineSummaryNoBfsCount = { ...baseline.summary };
+  delete baselineSummaryNoBfsCount.bfsVisitedStates;
+
   const comparableActual = {
-    summary: report.summary,
+    summary: actualSummaryNoBfsCount,
     definedScenes: report.bfs.definedScenes,
     cycle1Scenes: report.bfs.cycle1Scenes,
     multiCycleScenes: report.bfs.multiCycleScenes,
@@ -67,7 +75,7 @@ test('步骤 2 去外链与三类弹框改造后，通关扫描与锁定基线 1
     quickJumps: report.bfs.quickJumps
   };
 
-  const comparableBaseline = { ...baseline };
+  const comparableBaseline = { ...baseline, summary: baselineSummaryNoBfsCount };
   delete comparableBaseline.sourceFile;
 
   assert.deepEqual(comparableActual, comparableBaseline);
@@ -185,6 +193,36 @@ test('Playwright 三视口（360x640 / 390x844 / 768x1024）断网冒烟、正�
       await page.locator('#resetModal').waitFor({ state: 'hidden' });
       await page.locator('#btnCloseMenu').click();
       await page.locator('#menuModal').waitFor({ state: 'hidden' });
+
+      // 5. 人名点击弹出当幕人物介绍，不剧透后续周目情节
+      await page.locator('.kw-char[data-char="heiyi_daoren"]').click();
+      await assertVisibleAndClickable(page, '#clueModal .modal-card', vp);
+      const act1Badge = await page.locator('#clueModalBadge').textContent();
+      const act1Title = await page.locator('#clueModalTitle').textContent();
+      const act1Text = await page.locator('#clueModalText').textContent();
+      assert.ok(act1Badge.includes('人物介绍'), '第一幕点黑衣道人应显示人物介绍徽标');
+      assert.equal(act1Title, '高台黑衣道人');
+      assert.equal(act1Text.includes('刘信'), false, '第一幕黑衣道人介绍不应剧透刘信姓名');
+      await page.locator('#btnCloseClue').click();
+      await page.locator('#clueModal').waitFor({ state: 'hidden' });
+
+      await page.locator('#btnTopChoice').click();
+      await assertVisibleAndClickable(page, '#actionDeck button[data-cidx="1"]', vp);
+      await page.locator('#actionDeck button[data-cidx="1"]').click();
+      await page.locator('#choiceModal').waitFor({ state: 'hidden' });
+
+      await page.locator('.kw-char[data-char="yusuzhen"]').click();
+      await assertVisibleAndClickable(page, '#clueModal .modal-card', vp);
+      const act2Badge = await page.locator('#clueModalBadge').textContent();
+      const act2Tag = await page.locator('#clueModalTag').textContent();
+      const act2Title = await page.locator('#clueModalTitle').textContent();
+      const act2Text = await page.locator('#clueModalText').textContent();
+      assert.ok(act2Badge.includes('人物介绍'), '第二幕点玉素真应显示人物介绍徽标');
+      assert.equal(act2Title, '玉素真');
+      assert.equal(act2Tag.includes('审讯秘闻'), false, '初见玉素真不应显示审讯秘闻标签');
+      assert.equal(act2Text.includes('养蛊') || act2Text.includes('刘信'), false, '初见玉素真不应剧透后续审讯内容');
+      await page.locator('#btnCloseClue').click();
+      await page.locator('#clueModal').waitFor({ state: 'hidden' });
 
       assert.equal(pageErrors.length, 0, `${vp.name} 交互全流程不应产生 JS 错误`);
       await context.close();
