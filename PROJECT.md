@@ -7,12 +7,13 @@
 
 ## 当前状态
 
-- 版本：`baseline` + 步骤 2 已完成（准备进入步骤 3）
+- 版本：`baseline` + 步骤 3 已完成（准备进入步骤 4）
 - 已完成：
   - 步骤 0：整理只读原始资料目录 `source/`，建立 `.gitignore`、Git 基线提交与标签 `baseline-before-takeover` / `baseline`，创建 `AGENTS.md` 与本文件 `PROJECT.md`（本地 Git 提交身份已在本仓库 `.git/config` 设为 `jason <jason@local>`，未修改全局系统配置）。
   - 步骤 1：编写不改源码的 Node 通关扫描器 `tools/scan.js` 与测试 `tests/scan.test.js`，产出锁定基线 `tests/samples/demo-baseline.json`。实测 `source/demo-mobile.html` 全状态矩阵（15 场景 × 8,192 组合，共 122,880 次求值）及跨周目百世书 BFS（13,728 个状态）结果：0 异常、0 死路、0 无效出口；首周目可达 3 个结局（`BE1`、`BE2`、`BE3`），多周目继承可达全部 14 个定义结局（含 `NE_INNER`、`TE_CH1`、`END_REFINE`、`END_SELF_BOOM`），15/15 场景、11/11 线索、4/4 宝物、6/6 功法、1/1 天赋、4/4 一键复刻全可达。
-  - 步骤 2：去除全部外部 CDN/字体外链，手写静态 CSS（`src/styles/main.css`，含 `:root` 层级变量、`100dvh`、`max-height: 85dvh`、`max-width: 680px` 居中与 iPad Safari 适配），并按用户手机截图反馈改造成“顶部隐藏式目录 + 全屏小说阅读（占屏 >= 80%） + 居中线索弹框（带 `✕`） + 遇选项弹框（带 `✕`）”；新增 `esbuild` 单文件打包（`dist/index.html` 与 GitHub Pages `index.html`）、`npm run preview` 局域网预览及 Playwright 三视口（`360×640`/`390×844`/`768×1024`）断网自动化测试。
-- 进行中：无（等待用户验收步骤 2 手机端实机效果，并确认步骤 3《提取纯 JS 核心引擎》验收卡）。
+  - 步骤 2：去除全部外部 CDN/字体外链，手写静态 CSS（`src/styles/main.css`，含 `:root` 层级变量、`100dvh`、`max-height: 85dvh`、`max-width: 680px` 居中与 iPad Safari 适配），并按用户手机截图反馈改造成“顶部隐藏式目录 + 全屏小说阅读（占屏 >= 80%） + 居中线索弹框（带 `✕`） + 主动点击抉择弹框（带 `✕`）/ 单选项直接下一页”；新增 `esbuild` 单文件打包（`dist/index.html` 与 GitHub Pages `index.html`）、`npm run preview` 局域网预览及 Playwright 三视口（`360×640`/`390×844`/`768×1024`）断网自动化测试。
+  - 步骤 3：抽离纯 JS 核心引擎到 `src/engine/game-engine.js`（零 `window`/`document` 依赖，通过抽象 `storage` 与 `hooks` 解耦，预留 `routes` 流派记录字段），建立纯 Node 无 DOM 单元测试 `tests/engine.test.js`，升级 `tools/build.js` 使用 `esbuild.build` 打包多模块，全量扫描与 Playwright 测试保持 100% 通过。
+- 进行中：无（等待用户确认步骤 4《场景数据化》验收卡）。
 - 已知问题（整理自 `source/《苟在初圣魔门当人材》手游化 · 全书开发方案.md` 第 6 节及代码核对）：
   1. **依赖外链**：【已在步骤 2 解决】已去除 Tailwind CDN 与 Google Fonts 外链，改用系统宋体回退与 `DOMContentLoaded`，`dist/index.html` 0 外链断网可用。
   2. **提示条与弹窗层级失效**：【已在步骤 2 解决】建立 `:root` `--z-*` 层级变量，`#toastContainer`、`#resetModal`、`#gameOverModal` 等全部按规范分层且无遮挡。
@@ -26,15 +27,16 @@
   10. **空壳设定与结局统计口径不一致（留待 M3 玩法修改，MVP 阶段核实并记录）**：`runItems` 仅写入 `[]`、部分设定（如 `hasDisease`、`caibu` / `alert`）未参与判定；`ENDINGS_DB`（12 项）加场景内通关结局 `NE_INNER`、`TE_CH1` 共定义了 14 个结局，经步骤 1/2 验证 14 个全部多周目可达，但 UI 因果树列表 `mainEndings` 目前仅列 13 项（漏计 `END_SELF_BOOM`）。
   11. **境界表不全**：`REALM_NAMES` 仅定义 `0`、`1`、`4`、`7`，其余境界数值可能显示 `undefined`。
   12. **章节与存档键硬编码**：标题与 `SAVE_KEY` 写死为第一章（随步骤 3/4 解耦）。
-- 下一步：步骤 3 —— 从 `src/main.js` 抽离纯 JS 核心引擎到 `src/engine/`，实现引擎与界面彻底解耦且通关扫描与锁定基线 100% 等价。
+- 下一步：步骤 4 —— 将 15 个剧情场景与词表拆成纯数据模块（`src/data/ch1/`），以固定条件/效果词汇表驱动，彻底与代码分离，为后续“3~5 页小说扩写 + 真抉择与流派/IF线”铺平道路。
 
 ## 当前验收卡
 
 - **已完成**：
   - 步骤 0（接管存档与项目初始化）：Git 双标签与只读 `source/` 就位。
   - 步骤 1（通关扫描：对 demo 的行为锁定）：0 异常 / 0 死路 / 14 结局全跨周目可达，通过 `node --test`。
-  - 步骤 2（去外链、手写 CSS 与三类弹框纯小说阅读改造）：`npm test` 6/6 全绿、三视口断网 Playwright 全通过、已部署至本地穿透与 GitHub Pages 供真机验收。
-- **待确认**：步骤 2 真机视觉与手感待用户验收，步骤 3（提取纯 JS 核心引擎）验收卡待确认。
+  - 步骤 2（去外链、手写 CSS 与三类弹框纯小说阅读改造）：`npm test` 与三视口断网 Playwright 全通过，已修正人名剧透与滑底自动弹窗/单选项框问题。
+  - 步骤 3（提取纯 JS 核心引擎）：引擎零 DOM 抽离至 `src/engine/game-engine.js`，纯 Node 无 DOM 单元测试全绿，多模块打包产物全量扫描等价。
+- **待确认**：步骤 4（场景数据化）验收卡待确认。
 
 ## 手机端显示与弹窗可见性硬性约束（步骤 2、5、6、8 必遵）
 
@@ -66,11 +68,11 @@
 ## 如何运行与测试
 
 - 运行（离线单文件）：运行 `npm run build` 生成 `dist/index.html` 与根目录 `index.html`，双击 `dist/index.html` 即可离线打开游玩（0 外链）；或运行 `npm run preview` 在局域网 `0.0.0.0:8080` 启动预览服务。
-- 全部测试：`npm test`（即 `node --test tests/*.test.js`，包含 `tests/scan.test.js` 与 `tests/step2.test.js` 共 6 条测试，全绿通过）。
+- 全部测试：`npm test`（即 `node --test tests/*.test.js`，包含 `tests/scan.test.js`、`tests/step2.test.js` 与纯无 DOM 的 `tests/engine.test.js` 共 8 条测试，全绿通过）。
 - 通关扫描报告：`npm run scan`（即 `node tools/scan.js`，输出中文全状态与跨周目扫描摘要）。
 - 真实样例：
   - `source/demo-mobile.html`（第一章原始单页原型，2,537 行，只读）
-  - `dist/index.html`（去外链打包后的离线单文件产物）
+  - `dist/index.html`（`esbuild` 多模块打包后的离线单文件产物）
   - `source/苟在初圣魔门当人材_1-500章.txt`（原始小说文本，**GBK / CP936 编码**，非损坏文件；解码后共 1,521,805 字符，0 个乱码替换符）
 - 只能在本机验证的部分：真实 iPad（Safari）与安卓手机/浏览器的视觉效果、阅读手感、音效播放、双击单文件 HTML 打开体验。
 - 环境依赖：
@@ -80,9 +82,9 @@
 ## 目录结构说明
 
 - `source/`：只读原始资料目录（原著 txt、全书开发方案、原始 `demo-mobile.html`；其中 `*.txt` 被 `.gitignore` 忽略不入库）。
-- `src/`：项目源码目录（当前含 `template.html`、`main.js`、`styles/main.css`；后续步骤按 `engine/`、`data/ch1/`、`ui/` 分层拆出）。
-- `tools/`：工程工具脚本目录（`tools/scan.js` 通关扫描、`tools/build.js` 单文件离线构建、`tools/preview.js` 局域网预览）。
-- `tests/`：自动化测试与 `tests/samples/` 锁定样例目录（`tests/scan.test.js`、`tests/step2.test.js`、`tests/samples/demo-baseline.json`）。
+- `src/`：项目源码目录（含 `template.html`、`main.js`、`styles/main.css`、纯核心引擎 `engine/game-engine.js`；后续步骤按 `data/ch1/`、`ui/` 继续拆出）。
+- `tools/`：工程工具脚本目录（`tools/scan.js` 通关扫描、`tools/build.js` 多模块单文件构建、`tools/preview.js` 局域网预览）。
+- `tests/`：自动化测试与 `tests/samples/` 锁定样例目录（`tests/scan.test.js`、`tests/step2.test.js`、`tests/engine.test.js`、`tests/samples/demo-baseline.json`）。
 - `index.html`：与 `dist/index.html` 同步的根目录单文件入口，供 GitHub Pages 云端部署直访。
 - `scratch/`（不入库）：一次性探针脚本临时目录。
 - `dist/`（不入库）：`esbuild` 构建产出的可双击单文件 HTML。
@@ -101,15 +103,16 @@
 - **2026-11-19 · 补充画风、iPad Safari 适配与双端文本存档码**：① 步骤 2、8 严格沿用 `demo-mobile.html` 纯小说水墨暗调气质，不改造成花哨手游 UI；② 针对真实游玩设备 iPad（Safari）+ 安卓手机，正文/抽屉/弹窗加 `max-width: 680px` 居中，按钮加 `touch-action: manipulation`，弹窗滚动区加 `overscroll-behavior: contain`，音效首次点击解锁 `AudioContext` 并静默降级，Playwright 增补 `768×1024` iPad 竖屏视口；③ 步骤 5 增加“一键复制/粘贴存档文本码”方便 iPad 与安卓互导存档。
 - **2026-11-19 · 手机阅读交互形态**：按用户真机截图与阅读体验反馈，取消常驻顶栏大标题与底部选项栏，改为“极简一行顶栏 + 隐藏式目录弹层（带 `✕`） + 居中线索卡片弹框（带 `✕`） + 文末主动点击抉择弹框（带 `✕`）”；同时彻底取消“滑到底自动弹窗”（避免没读完打断阅读），并将单选项过场页直接改为文末 `下一页 · ... →` 按钮翻页，不强制弹单选项框。
 - **2026-11-19 · 修正正文人名剧透问题**：原 `demo-mobile.html` 在第一幕“黑衣道人”与第二幕初见“玉素真”时直接绑定了后续才能知道的线索（`liuxin_identity`、`yusuzhen_secret`），导致初见人名就剧透。现改为通过 `CHAR_INTRO_DB` 与 `UI.openCharIntroModal` 弹出符合当前剧情阶段的人物介绍卡片；`yusuzhen_secret` 等后期线索仅在审讯等对应剧情节点解锁（不影响 11/11 线索全收集基线）。
+- **2026-11-19 · 主线收敛与章内差异化策略**：跨章坚持锁定原著主干（避免多章世界线乘法发散导致 AI 失控），同时通过三条设计保证不枯燥：① 每章提供 2 种以上风格迥异的破局流派（如狠绝杀伐 vs 权谋养蛊/暗手控制，并在引擎中预留 `routes` 字段），进入下章带入不同“流派身份牌”触发专属对话与解法；② 偏门支线做成 3~5 页完整小剧场或章节专属的“平行 IF 终局（如《合欢殿真传·另类完结》）”而不只弹死局；③ 不同世攒下的宝物/功法形成跨章牌库影响后续可用手段。
 
 ## 交接备忘
 
-- 没做完的事：步骤 3–10 尚未开始；待用户确认是否先行读取原著前 15~20 章并规划“3~5 页小说章节 + 真抉择”扩写方案。
+- 没做完的事：步骤 4–10 尚未开始；待步骤 4 场景数据化完成后，授权读取原著前 20 章并扩写第一章的“3~5 页小说 + 真抉择与流派/IF 终局”。
 - 踩过的坑、试过无效的方法：原著实为 GBK 编码而非损坏；本机需在仓库 `--local` 配置 Git 提交身份；`demo-mobile.html` 跨周目 BFS 若对全部 11 条线索拆成单个逐一点击会产生 $2^{11}$ 组合爆炸，改为每页批量收齐线索 + 留“不点线索”路径后降至 13,728 态稳定收敛；`.story-para` 初始透明度设为 `0` 会导致切章瞬间文本偏暗，改为从 `0.88` 快速上浮显现；滑到底部自动弹选项框会打断阅读且单选项弹框多余，已全部修正。
 - 需要用户决策的未决问题：
-  1. 是否立即基于本地原著前 15~20 章（需用户授权提前读取）规划第一章“3~5 页小说章节 + 真抉择”重排方案，还是先按步骤 3 抽离纯 JS 引擎与步骤 4 场景数据化后再扩写剧情；
-  2. 步骤 2 界面与交互的最终验收；
-  3. 版权授权、合欢殿等内容尺度（M3 前必须明确，不阻塞 MVP）。
+  1. 步骤 4（场景数据化）验收卡的确认；
+  2. 版权授权、合欢殿等内容尺度（M3 前必须明确，不阻塞 MVP）；
+  3. 第一章对应原著第几章到第几章（待步骤 4 完成后扩写剧情或步骤 9 拆章时一并核对）。
 
 ## 待办 / 发现
 

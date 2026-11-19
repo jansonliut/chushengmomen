@@ -1,3 +1,5 @@
+import { createGameEngine, SAVE_KEY, DEFAULT_META } from './engine/game-engine.js';
+
 /*************************************************************************
  * 1. 轻量化 Web Audio 水墨仙侠音效引擎（无外部依赖，iPad Safari 首次点击解锁）
  *************************************************************************/
@@ -435,367 +437,9 @@ const ENDINGS_DB = {
 };
 
 /*************************************************************************
- * 4. 游戏核心引擎（状态持久化 + 场景状态机 + 结算逻辑）
+ * 4. 游戏核心引擎实例（逻辑已抽离至 src/engine/game-engine.js）
  *************************************************************************/
-const SAVE_KEY = 'baishishu_ch1_bl_save_v1';
-
-const DEFAULT_META = () => ({
-  pagesLeft: 100,
-  cycle: 1,
-  talents: [],
-  items: [],
-  techniques: [],
-  maxRealm: 0,
-  clues: [],
-  endings: {},
-  endingCounts: {},
-  burnedHints: [],
-  clearedNodes: [],
-  npcData: {
-    yusuzhen: { caibu: 0, alert: 15, met: false, sealed: false },
-    liuxin: { caibu: 0, alert: 20, met: false, enslaved: false },
-    chenxinan: { caibu: 0, alert: 0, met: false, shattered: false }
-  },
-  trueEndingUnlocked: false
-});
-
-const Game = {
-  meta: DEFAULT_META(),
-  run: null,
-  consoleTab: 'cards',
-  mobilePane: 'story',
-  pendingDeath: null,
-  selectedInherit: null,
-  deductionPicks: [],
-  dualSurface: 0,
-  dualInner: 0,
-
-  init() {
-    this.load();
-    InkCanvas.init();
-    this.startNewRun(false);
-  },
-
-  load() {
-    try {
-      const raw = localStorage.getItem(SAVE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        this.meta = Object.assign(DEFAULT_META(), parsed);
-        this.meta.npcData = Object.assign(DEFAULT_META().npcData, parsed.npcData || {});
-      }
-    } catch (e) {
-      this.meta = DEFAULT_META();
-    }
-  },
-
-  save() {
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(this.meta));
-    } catch (e) {}
-  },
-
-  startNewRun(playAnim = true) {
-    this.run = {
-      node: 'act1_plaza',
-      realm: this.meta.maxRealm,
-      hasDisease: true,
-      isStealth: false,
-      runPeakRealm: this.meta.maxRealm,
-      runItems: [],
-      flags: {}
-    };
-    this.deductionPicks = [];
-    this.dualSurface = 0;
-    this.dualInner = 0;
-
-    if (playAnim) {
-      this.triggerPageFlip(() => {
-        this.go('act1_plaza');
-      });
-    } else {
-      this.go('act1_plaza');
-    }
-  },
-
-  triggerPageFlip(cb, mainText = '百世书翻页，沙沙作响', subText = null) {
-    SoundFX.pageFlip();
-    const ov = document.getElementById('pageFlipOverlay');
-    document.getElementById('flipMainText').textContent = mainText;
-    document.getElementById('flipSubText').textContent = subText || `第 ${this.meta.cycle} 世开启 · 残页 ${this.meta.pagesLeft}`;
-    ov.classList.add('active');
-    setTimeout(() => {
-      if (cb) cb();
-      setTimeout(() => ov.classList.remove('active'), 420);
-    }, 520);
-  },
-
-  hasTalent(id) { return this.meta.talents.includes(id); },
-  hasItem(id) { return this.meta.items.includes(id) || this.run.runItems.includes(id); },
-  hasMetaItem(id) { return this.meta.items.includes(id); },
-  hasTech(id) { return this.meta.techniques.includes(id); },
-  hasClue(id) { return this.meta.clues.includes(id); },
-
-  unlockClue(id, silent = false) {
-    if (!CLUES_DB[id]) return;
-    const already = this.meta.clues.includes(id);
-    if (!already) {
-      this.meta.clues.push(id);
-      this.save();
-      if (!silent) {
-        SoundFX.clue();
-        const dot = document.getElementById('mobileClueDot');
-        if (dot) dot.classList.remove('hidden');
-        UI.openClueModal(CLUES_DB[id], true);
-      }
-    } else if (!silent) {
-      SoundFX.click();
-      UI.openClueModal(CLUES_DB[id], false);
-    }
-    UI.renderConsole();
-    document.querySelectorAll(`.kw-clue[data-clue="${id}"]`).forEach(el => el.classList.add('collected'));
-  },
-
-  learnTech(id, silent = false) {
-    if (!TECHNIQUES_DB[id]) return;
-    if (!this.meta.techniques.includes(id)) {
-      this.meta.techniques.push(id);
-      this.save();
-      if (!silent) UI.toast(`📖 记忆功法【${TECHNIQUES_DB[id].name}】`, '知识不随身死消散，可永世留存！', 'gold');
-    }
-    UI.renderConsole();
-  },
-
-  markCleared(nodeKey) {
-    if (!this.meta.clearedNodes.includes(nodeKey)) {
-      this.meta.clearedNodes.push(nodeKey);
-      this.save();
-    }
-  },
-
-  setRealm(val) {
-    this.run.realm = val;
-    if (val > this.run.runPeakRealm) this.run.runPeakRealm = val;
-    UI.renderConsole();
-  },
-
-  toggleStealth() {
-    if (!this.hasTech('lianqi_jue')) return;
-    this.run.isStealth = !this.run.isStealth;
-    SoundFX.click();
-    UI.toast(
-      this.run.isStealth ? '🌑 已运转《敛气决》' : '🌕 已撤去《敛气决》',
-      this.run.isStealth ? '周身真气收束皮肉之下，外人视若凡胎。' : '真气不再遮掩，高阶修士一眼可察。',
-      'gold'
-    );
-    UI.renderConsole();
-    if (this.run.node === 'act1_plaza') UI.renderScene();
-  },
-
-  triggerSelfBoom() {
-    if (!this.hasTech('shasheng_zhou')) return;
-    SoundFX.death();
-    UI.fxShake();
-    UI.fxVignette('blood', 1200);
-    UI.closeMenuModal();
-    UI.closeChoiceModal();
-    this.triggerDeath('END_SELF_BOOM');
-  },
-
-  quickJump(target) {
-    SoundFX.pageFlip();
-    UI.closeMenuModal();
-    UI.closeChoiceModal();
-    this.run = {
-      node: 'act1_plaza',
-      realm: this.meta.maxRealm,
-      hasDisease: true,
-      isStealth: this.hasTech('lianqi_jue') && this.meta.maxRealm > 0,
-      runPeakRealm: this.meta.maxRealm,
-      runItems: [],
-      flags: { quickJumped: true }
-    };
-    if (target === 'act2_hehuan_reverse') {
-      this.meta.npcData.yusuzhen.met = true;
-      this.triggerPageFlip(() => this.go('act2_hehuan_reverse'), '一键托管复刻', '已自动藏拙过削峰，直抵合欢殿静室……');
-    } else if (target === 'act3_butian_guide') {
-      this.meta.npcData.yusuzhen.met = true;
-      this.meta.npcData.liuxin.met = true;
-      this.setRealm(Math.max(1, this.run.realm));
-      this.triggerPageFlip(() => this.go('act3_butian_guide'), '一键托管复刻', '已自动三日反杀玉素真，直面门外等候的刘信……');
-    } else if (target === 'inner_hub') {
-      this.meta.npcData.yusuzhen.met = true;
-      this.meta.npcData.liuxin.met = true;
-      this.setRealm(Math.max(1, this.run.realm));
-      this.triggerPageFlip(() => this.go('inner_hub'), '一键托管复刻', '已自动喂炁压境、让秦宇替死，低调晋升内门……');
-    } else if (target === 'act4_ambush_start') {
-      this.meta.npcData.yusuzhen.met = true;
-      this.meta.npcData.liuxin.met = true;
-      this.setRealm(Math.max(1, this.run.realm));
-      this.run.flags.arrayPlanted = true;
-      this.triggerPageFlip(() => this.go('act4_ambush_start'), '一键托管复刻', '已钓鱼引出刘信，于补天峰洞府门口预埋血洗天河剑阵……');
-    }
-  },
-
-  go(sceneId) {
-    this.run.node = sceneId;
-    UI.closeChoiceModal();
-    UI.choiceAutoPopped = false;
-    const scene = SCENES[sceneId];
-    if (scene && typeof scene.onEnter === 'function') {
-      scene.onEnter();
-    }
-    UI.renderScene();
-    UI.renderConsole();
-    const vp = document.getElementById('storyViewport');
-    if (vp) vp.scrollTop = 0;
-  },
-
-  triggerDeath(beId) {
-    const data = ENDINGS_DB[beId];
-    if (!data) return;
-    SoundFX.death();
-    UI.fxShake();
-    UI.fxVignette('blood', 1400);
-    UI.closeChoiceModal();
-    UI.closeMenuModal();
-
-    this.meta.endings[beId] = true;
-    this.meta.endingCounts[beId] = (this.meta.endingCounts[beId] || 0) + 1;
-    if (data.unlockClues) {
-      data.unlockClues.forEach(c => this.unlockClue(c, true));
-    }
-    this.save();
-
-    this.pendingDeath = beId;
-    this.selectedInherit = null;
-    UI.openDeathModal(beId);
-    UI.renderConsole();
-  },
-
-  burnPageForHint() {
-    if (!this.pendingDeath) return;
-    if (this.meta.burnedHints.includes(this.pendingDeath)) return;
-    if (this.meta.pagesLeft <= 1) {
-      UI.toast('⚠️ 百世书残页不足', '只剩最后一页，无法再焚页问卜！', 'red');
-      return;
-    }
-    this.meta.pagesLeft -= 1;
-    this.meta.burnedHints.push(this.pendingDeath);
-    this.save();
-    SoundFX.clue();
-    UI.openDeathModal(this.pendingDeath);
-    UI.renderConsole();
-    UI.toast('🔥 焚页叩天机', '消耗 1 页百世书，天机直白显现！', 'gold');
-  },
-
-  selectInheritOption(type) {
-    this.selectedInherit = type;
-    SoundFX.click();
-    document.querySelectorAll('.inherit-card').forEach(el => {
-      el.classList.toggle('selected', el.dataset.type === type);
-    });
-    const hintMap = {
-      item: '将选中的宝物永久刻入百世书，下世开局直接持有。',
-      realm: '将本世巅峰修为带回下世（注意在第一幕运转《敛气决》藏拙）。',
-      life: '保留寿元余泽，增强体魄（本测试章无额外寿元关卡）。',
-      talent: '放弃本世物质收获，依据前世逆天经历觉醒专属天赋。'
-    };
-    document.getElementById('inheritSelectedHint').textContent = hintMap[type] || '';
-  },
-
-  confirmReincarnate() {
-    const beId = this.pendingDeath;
-    const data = ENDINGS_DB[beId];
-    if (!this.selectedInherit) {
-      UI.toast('请先择定传承', '请点击上方四选一卡片后再翻动百世书。', 'red');
-      return;
-    }
-
-    let inheritMsg = '一无所获，唯留前世记忆。';
-    if (this.selectedInherit === 'item') {
-      const itemKey = data.specialItem || (this.run.runItems.length ? this.run.runItems[this.run.runItems.length - 1] : null);
-      if (itemKey && !this.meta.items.includes(itemKey)) {
-        this.meta.items.push(itemKey);
-        inheritMsg = `永久带回宝物【${ITEMS_DB[itemKey].name}】！`;
-      }
-    } else if (this.selectedInherit === 'realm') {
-      if (this.run.runPeakRealm > this.meta.maxRealm) {
-        this.meta.maxRealm = this.run.runPeakRealm;
-        inheritMsg = `永久继承修为【${REALM_NAMES[this.meta.maxRealm]}】！`;
-      }
-    } else if (this.selectedInherit === 'talent') {
-      if (data.guaranteedTalent && !this.meta.talents.includes(data.guaranteedTalent)) {
-        this.meta.talents.push(data.guaranteedTalent);
-        inheritMsg = `觉醒白色神技【${TALENTS_DB[data.guaranteedTalent].name}】！`;
-      } else {
-        inheritMsg = '前世未触发新的逆天壮举，未觉醒新天赋。';
-      }
-    }
-
-    this.meta.pagesLeft -= 1;
-    this.meta.cycle += 1;
-    this.save();
-
-    document.getElementById('deathModal').classList.add('hidden');
-    this.pendingDeath = null;
-
-    if (this.meta.pagesLeft <= 0) {
-      document.getElementById('gameOverModal').classList.remove('hidden');
-      return;
-    }
-
-    this.startNewRun(true);
-    setTimeout(() => {
-      UI.toast(`📜 第 ${this.meta.cycle} 世开启`, inheritMsg, 'gold');
-    }, 700);
-  },
-
-  toggleDeductionClue(clueId) {
-    SoundFX.click();
-    const idx = this.deductionPicks.indexOf(clueId);
-    if (idx >= 0) {
-      this.deductionPicks.splice(idx, 1);
-    } else {
-      if (this.deductionPicks.length >= 2) this.deductionPicks.shift();
-      this.deductionPicks.push(clueId);
-    }
-    UI.renderScene();
-  },
-
-  submitDeduction() {
-    if (this.deductionPicks.length < 2) {
-      UI.toast('线索不足', '请点选【两条】互相矛盾的线索进行因果证伪。', 'red');
-      return;
-    }
-    const ok = this.deductionPicks.includes('yusuzhen_death') && this.deductionPicks.includes('daoshu_heal');
-    if (ok) {
-      this.unlockClue('liuxin_trap', false);
-      this.run.flags.deductionSolved = true;
-      this.meta.npcData.liuxin.alert = Math.min(100, this.meta.npcData.liuxin.alert + 40);
-      this.save();
-      UI.fxShake();
-      UI.fxVignette('blood', 900);
-      this.go('act3_truth_revealed');
-    } else {
-      SoundFX.death();
-      UI.toast('推演未果', '此两条线索并无直接矛盾。提示：对比玉素真第一世的死因与你修《先天道书》后的身体变化！', 'red');
-    }
-  },
-
-  hardReset() {
-    localStorage.removeItem(SAVE_KEY);
-    this.meta = DEFAULT_META();
-    UI.closeResetModal();
-    UI.closeMenuModal();
-    UI.closeChoiceModal();
-    UI.closeClueModal();
-    UI.closeCodex();
-    document.getElementById('gameOverModal').classList.add('hidden');
-    this.startNewRun(true);
-    UI.toast('🕯️ 百世书已重铸', '一切归零，回到第 1 世削峰广场。', 'normal');
-  }
-};
+let Game;
 
 /*************************************************************************
  * 5. 完整第一章交互剧本树 (SCENES)
@@ -1500,6 +1144,84 @@ const SCENES = {
   }
 };
 
+Game = createGameEngine({
+  data: {
+    REALM_NAMES,
+    TALENTS_DB,
+    ITEMS_DB,
+    TECHNIQUES_DB,
+    CLUES_DB,
+    ENDINGS_DB,
+    SCENES,
+    SAVE_KEY
+  },
+  storage: typeof localStorage !== 'undefined' ? localStorage : null,
+  hooks: {
+    onInit: () => InkCanvas.init(),
+    onRenderScene: () => UI.renderScene(),
+    onRenderConsole: () => UI.renderConsole(),
+    onResetScroll: () => {
+      const vp = document.getElementById('storyViewport');
+      if (vp) vp.scrollTop = 0;
+    },
+    onResetChoiceAutoPop: () => { UI.choiceAutoPopped = false; },
+    onShowClueDot: () => {
+      const dot = document.getElementById('mobileClueDot');
+      if (dot) dot.classList.remove('hidden');
+    },
+    onOpenClueModal: (clue, isNew) => UI.openClueModal(clue, isNew),
+    onClueCollected: (id) => {
+      document.querySelectorAll(`.kw-clue[data-clue="${id}"]`).forEach(el => el.classList.add('collected'));
+    },
+    onOpenDeathModal: (beId) => UI.openDeathModal(beId),
+    onCloseDeathModal: () => {
+      const m = document.getElementById('deathModal');
+      if (m) m.classList.add('hidden');
+    },
+    onOpenGameOverModal: () => {
+      const m = document.getElementById('gameOverModal');
+      if (m) m.classList.remove('hidden');
+    },
+    onCloseMenuModal: () => UI.closeMenuModal(),
+    onCloseChoiceModal: () => UI.closeChoiceModal(),
+    onCloseAllModals: () => {
+      UI.closeResetModal();
+      UI.closeMenuModal();
+      UI.closeChoiceModal();
+      UI.closeClueModal();
+      UI.closeCodex();
+      const gm = document.getElementById('gameOverModal');
+      if (gm) gm.classList.add('hidden');
+    },
+    onSelectInherit: (type, hint) => {
+      document.querySelectorAll('.inherit-card').forEach(el => {
+        el.classList.toggle('selected', el.dataset.type === type);
+      });
+      const hEl = document.getElementById('inheritSelectedHint');
+      if (hEl) hEl.textContent = hint;
+    },
+    onPageFlip: (cb, mainText, subText) => {
+      const ov = document.getElementById('pageFlipOverlay');
+      document.getElementById('flipMainText').textContent = mainText;
+      document.getElementById('flipSubText').textContent = subText;
+      ov.classList.add('active');
+      setTimeout(() => {
+        if (cb) cb();
+        setTimeout(() => ov.classList.remove('active'), 420);
+      }, 520);
+    },
+    onToast: (title, desc, style) => UI.toast(title, desc, style),
+    onReincarnateToast: (cycle, inheritMsg) => {
+      setTimeout(() => UI.toast(`📜 第 ${cycle} 世开启`, inheritMsg, 'gold'), 700);
+    },
+    onSound: (type) => {
+      if (typeof SoundFX[type] === 'function') SoundFX[type]();
+    },
+    onShake: () => UI.fxShake(),
+    onVignette: (type, duration) => UI.fxVignette(type, duration)
+  }
+});
+
 /*************************************************************************
  * 6. UI 渲染器（隐藏目录 + 居中线索框 + 遇选项弹框）
  *************************************************************************/
@@ -2050,6 +1772,24 @@ function bootstrapApp() {
   UI.bindEvents();
   Game.init();
 }
+
+globalThis.__CHUSHENG__ = {
+  REALM_NAMES,
+  TALENTS_DB,
+  ITEMS_DB,
+  TECHNIQUES_DB,
+  CLUES_DB,
+  NPCS_DB,
+  CHAR_INTRO_DB,
+  ENDINGS_DB,
+  SAVE_KEY,
+  DEFAULT_META,
+  Game,
+  SCENES,
+  UI,
+  SoundFX,
+  InkCanvas
+};
 
 window.Game = Game;
 window.UI = UI;

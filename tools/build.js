@@ -16,18 +16,21 @@ export async function buildSingleFile() {
 
   const template = fs.readFileSync(templatePath, 'utf8');
   const cssRaw = fs.readFileSync(cssPath, 'utf8');
-  const jsRaw = fs.readFileSync(jsPath, 'utf8');
 
   const cssRes = await esbuild.transform(cssRaw, {
     loader: 'css',
     minify: true
   });
 
-  const jsRes = await esbuild.transform(jsRaw, {
-    loader: 'js',
-    minify: false,
+  const jsBuild = await esbuild.build({
+    entryPoints: [jsPath],
+    bundle: true,
+    write: false,
+    format: 'iife',
     target: 'es2020'
   });
+  const bundledJs = jsBuild.outputFiles[0].text;
+  const scanCompatFooter = `\nconst SCENES = globalThis.__CHUSHENG__.SCENES;\nconst { REALM_NAMES, TALENTS_DB, ITEMS_DB, TECHNIQUES_DB, CLUES_DB, NPCS_DB, CHAR_INTRO_DB, ENDINGS_DB, SAVE_KEY, DEFAULT_META, Game, UI, SoundFX, InkCanvas } = globalThis.__CHUSHENG__;\n`;
 
   if (!template.includes('/* __INLINE_CSS__ */') || !template.includes('/* __INLINE_JS__ */')) {
     throw new Error('src/template.html 缺少内联占位符 /* __INLINE_CSS__ */ 或 /* __INLINE_JS__ */');
@@ -35,7 +38,7 @@ export async function buildSingleFile() {
 
   const outputHtml = template
     .replace('/* __INLINE_CSS__ */', () => cssRes.code.trim())
-    .replace('/* __INLINE_JS__ */', () => jsRes.code);
+    .replace('/* __INLINE_JS__ */', () => bundledJs + scanCompatFooter);
 
   if (/https?:\/\//i.test(outputHtml)) {
     throw new Error('构建产物中包含 http:// 或 https:// 外部链接，违反离线无外链约束');
