@@ -1,0 +1,20 @@
+# 原始小说大文件（GBK 原件，只读不入库）
+source/*.txt
+
+# 拆章输出与构建产物
+novel/
+dist/
+
+# 一次性探针脚本与临时目录
+scratch/
+
+# 依赖与测试运行缓存
+node_modules/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# 操作系统与编辑器临时文件
+.DS_Store
+Thumbs.db
+*.log
