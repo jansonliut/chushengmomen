@@ -1,0 +1,192 @@
+{
+  "sourceFile": "source/demo-mobile.html",
+  "summary": {
+    "sceneCount": 15,
+    "stateCombinations": 8192,
+    "matrixEvaluations": 122880,
+    "bfsVisitedStates": 13728,
+    "totalExceptions": 0,
+    "totalDeadEnds": 0,
+    "totalInvalidTargets": 0,
+    "definedEndingCount": 14,
+    "cycle1EndingCount": 3,
+    "multiCycleEndingCount": 14,
+    "unreachableEndingCount": 0
+  },
+  "definedScenes": [
+    "act1_plaza",
+    "act2_hehuan_drained",
+    "act2_hehuan_meet",
+    "act2_hehuan_reverse",
+    "act2_lay_low",
+    "act2_yusuzhen_branch",
+    "act3_butian_guide",
+    "act3_cultivate",
+    "act3_truth_revealed",
+    "act4_ambush_start",
+    "act4_banner_test",
+    "act4_interrogate",
+    "act4_true_ending",
+    "inner_hub",
+    "inner_refine"
+  ],
+  "cycle1Scenes": [
+    "act1_plaza",
+    "act2_hehuan_drained",
+    "act2_hehuan_meet"
+  ],
+  "multiCycleScenes": [
+    "act1_plaza",
+    "act2_hehuan_drained",
+    "act2_hehuan_meet",
+    "act2_hehuan_reverse",
+    "act2_lay_low",
+    "act2_yusuzhen_branch",
+    "act3_butian_guide",
+    "act3_cultivate",
+    "act3_truth_revealed",
+    "act4_ambush_start",
+    "act4_banner_test",
+    "act4_interrogate",
+    "act4_true_ending",
+    "inner_hub",
+    "inner_refine"
+  ],
+  "unreachableScenes": [],
+  "definedEndings": [
+    "BE0",
+    "BE1",
+    "BE2",
+    "BE3",
+    "BE4",
+    "BE5",
+    "BE6",
+    "BE7",
+    "BE7b",
+    "END_NIUMA",
+    "END_REFINE",
+    "END_SELF_BOOM",
+    "NE_INNER",
+    "TE_CH1"
+  ],
+  "cycle1Endings": [
+    "BE1",
+    "BE2",
+    "BE3"
+  ],
+  "multiCycleEndings": [
+    "BE0",
+    "BE1",
+    "BE2",
+    "BE3",
+    "BE4",
+    "BE5",
+    "BE6",
+    "BE7",
+    "BE7b",
+    "END_NIUMA",
+    "END_REFINE",
+    "END_SELF_BOOM",
+    "NE_INNER",
+    "TE_CH1"
+  ],
+  "endingMinCycle": {
+    "BE1": 1,
+    "BE2": 1,
+    "BE3": 1,
+    "BE4": 2,
+    "BE5": 2,
+    "BE0": 3,
+    "NE_INNER": 3,
+    "END_NIUMA": 3,
+    "END_SELF_BOOM": 3,
+    "END_REFINE": 3,
+    "BE6": 4,
+    "BE7": 4,
+    "TE_CH1": 4,
+    "BE7b": 4
+  },
+  "unreachableEndings": [],
+  "clues": {
+    "defined": [
+      "chenliang_death",
+      "chenxinan_soul",
+      "daoshu_heal",
+      "guyu_sword",
+      "hualiu",
+      "liuxin_array",
+      "liuxin_identity",
+      "liuxin_trap",
+      "yusuzhen_death",
+      "yusuzhen_qi",
+      "yusuzhen_secret"
+    ],
+    "unlocked": [
+      "chenliang_death",
+      "chenxinan_soul",
+      "daoshu_heal",
+      "guyu_sword",
+      "hualiu",
+      "liuxin_array",
+      "liuxin_identity",
+      "liuxin_trap",
+      "yusuzhen_death",
+      "yusuzhen_qi",
+      "yusuzhen_secret"
+    ]
+  },
+  "items": {
+    "defined": [
+      "shenfu",
+      "wanling_fan",
+      "xiantian_qi",
+      "xueyang_jianwan"
+    ],
+    "unlocked": [
+      "shenfu",
+      "wanling_fan",
+      "xiantian_qi",
+      "xueyang_jianwan"
+    ]
+  },
+  "techniques": {
+    "defined": [
+      "jianzhen_tu",
+      "lianqi_jue",
+      "longhu_fu",
+      "shasheng_zhou",
+      "xiantian_daoshu",
+      "yinyang_fu"
+    ],
+    "unlocked": [
+      "jianzhen_tu",
+      "lianqi_jue",
+      "longhu_fu",
+      "shasheng_zhou",
+      "xiantian_daoshu",
+      "yinyang_fu"
+    ]
+  },
+  "talents": {
+    "defined": [
+      "shuangxiu"
+    ],
+    "unlocked": [
+      "shuangxiu"
+    ]
+  },
+  "quickJumps": {
+    "unlocked": [
+      "act2_hehuan_reverse",
+      "act3_butian_guide",
+      "act4_ambush_start",
+      "inner_hub"
+    ],
+    "landingScenes": {
+      "act2_hehuan_reverse": "act2_hehuan_reverse",
+      "act3_butian_guide": "act3_butian_guide",
+      "inner_hub": "inner_hub",
+      "act4_ambush_start": "act4_ambush_start"
+    }
+  }
+}
