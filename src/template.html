@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>苟在初圣魔门当人材 · 百世书（第一章）</title>
+  <style>/* __INLINE_CSS__ */</style>
+</head>
+<body>
+  <!-- 背景水墨余烬粒子 -->
+  <canvas id="inkCanvas"></canvas>
+
+  <!-- 威压/血红暗角层 -->
+  <div id="vignetteOverlay"></div>
+
+  <!-- 百世书翻页动画层 -->
+  <div id="pageFlipOverlay">
+    <div class="flip-kicker">百世轮回 · 因果重塑</div>
+    <div id="flipMainText">书页翻动，沙沙作响</div>
+    <div id="flipSubText">重归削峰血奉之日……</div>
+  </div>
+
+  <!-- 顶部浮动提示 Toast 容器（层级高于所有弹窗） -->
+  <div id="toastContainer"></div>
+
+  <!-- 主阅读应用容器 -->
+  <div id="appRoot">
+    <!-- 极简小说顶部栏（隐藏式目录入口 + 抉择快捷按钮） -->
+    <header id="readerTopBar">
+      <div class="topbar-title-wrap">
+        <span id="stageAct" class="topbar-act">第一幕</span>
+        <span class="topbar-sep">|</span>
+        <span id="stageTitle" class="topbar-title">削峰血奉 · 活人不如死人值钱</span>
+      </div>
+      <div class="topbar-actions">
+        <button id="btnTopChoice" type="button" class="topbar-btn topbar-btn-choice" onclick="UI.openChoiceModal()">
+          ⚔️ 抉择
+        </button>
+        <button id="btnToggleMenu" type="button" class="topbar-btn" onclick="UI.openMenuModal()">
+          ☰ 目录
+          <span id="mobileClueDot" class="clue-dot hidden"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 全屏小说舞台 -->
+    <main id="storyMain">
+      <section id="storyPane" class="ink-panel">
+        <div class="story-meta-strip">
+          <span id="stageLocation">📍 外门削峰广场</span>
+          <span id="stageTime">⏳ 入宗首日</span>
+        </div>
+        <div id="storyViewport">
+          <!-- 动态渲染小说正文与文末抉择触发区 -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 隐藏式目录面板（百世书状态、底牌、手札、因果树、设置） -->
+  <div id="menuModal" class="modal-backdrop modal-backdrop-menu hidden">
+    <div class="modal-card ink-panel">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">苟在初圣魔门当人材 · 目录</h2>
+          <div class="modal-subtitle">第一章 · 血奉人材（百世书与魔门手札）</div>
+        </div>
+        <button id="btnCloseMenu" type="button" class="modal-close-btn" aria-label="关闭目录" onclick="UI.closeMenuModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- 常驻状态条 -->
+        <div class="menu-stats-grid">
+          <div class="menu-stat-box">
+            <div class="menu-stat-label">百世书残页</div>
+            <div id="statPages" class="menu-stat-val">100</div>
+          </div>
+          <div class="menu-stat-box">
+            <div class="menu-stat-label">当前轮回</div>
+            <div id="statCycle" class="menu-stat-val">第 1 世</div>
+          </div>
+          <div class="menu-stat-box">
+            <div class="menu-stat-label">当前境界</div>
+            <div id="statRealm" class="menu-stat-val menu-stat-val-realm">凡人</div>
+          </div>
+        </div>
+
+        <div class="menu-toolbar">
+          <div id="statusTags" class="tag-row"></div>
+          <div id="quickArts" class="tag-row"></div>
+        </div>
+
+        <div class="menu-actions-bar">
+          <button id="btnFruitCodex" type="button" class="btn-tool btn-tool-gold pulse-gold hidden" onclick="UI.openCodex()">
+            ✦ 天道果位谱
+          </button>
+          <button id="btnAudioToggle" type="button" class="btn-tool" onclick="SoundFX.toggle()">
+            🔊 音效：开
+          </button>
+          <button id="btnOpenReset" type="button" class="btn-tool btn-tool-danger" onclick="UI.openResetModal()">
+            焚毁存档
+          </button>
+        </div>
+
+        <!-- 控制台三页签 -->
+        <div class="console-tabs">
+          <button id="tabBtnCards" type="button" class="console-tab-btn active" onclick="UI.switchConsoleTab('cards')">
+            百世底牌
+          </button>
+          <button id="tabBtnGrimoire" type="button" class="console-tab-btn" onclick="UI.switchConsoleTab('grimoire')">
+            魔门手札 (<span id="clueBadge">0</span>)
+          </button>
+          <button id="tabBtnTree" type="button" class="console-tab-btn" onclick="UI.switchConsoleTab('tree')">
+            百世因果树
+          </button>
+        </div>
+
+        <div id="consoleBody" class="stack-sm">
+          <!-- 动态渲染目录标签内容 -->
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-end">
+        <button type="button" class="btn-secondary" onclick="UI.closeMenuModal()">返回小说正文</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 遇到选项时弹出的居中抉择框（带 ✕ 关闭） -->
+  <div id="choiceModal" class="modal-backdrop hidden">
+    <div class="modal-card ink-panel">
+      <div class="modal-header">
+        <div>
+          <h2 id="choiceModalTitle" class="modal-title">面临抉择</h2>
+          <div class="modal-subtitle">可点右上角 ✕ 关掉回去重看正文或查线索</div>
+        </div>
+        <button id="btnCloseChoices" type="button" class="modal-close-btn" aria-label="关闭选项" onclick="UI.closeChoiceModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="actionDeck" class="choice-list">
+          <!-- 动态渲染当前场景的交互面板与选项 -->
+        </div>
+      </div>
+      <div class="modal-footer modal-footer-end">
+        <button type="button" class="btn-secondary" onclick="UI.closeChoiceModal()">暂且退回阅读</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 屏幕正中央线索弹框（点击正文高亮词弹出，带 ✕ 关闭） -->
+  <div id="clueModal" class="modal-backdrop modal-backdrop-clue hidden">
+    <div class="modal-card modal-card-clue ink-panel">
+      <div class="modal-header modal-header-gold">
+        <div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span id="clueModalBadge" class="seal-badge seal-gold">收录天机</span>
+            <span id="clueModalTag" style="font-size:12px;color:#fcd34d;font-weight:700;">内视发现</span>
+          </div>
+          <h2 id="clueModalTitle" class="modal-title">原身隐疾：花柳恶疾</h2>
+        </div>
+        <button id="btnCloseClue" type="button" class="modal-close-btn" aria-label="关闭线索" onclick="UI.closeClueModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="clueModalText" style="margin:0;font-size:15px;line-height:1.85;color:#f5f5f4;"></p>
+      </div>
+      <div class="modal-footer modal-footer-end">
+        <button id="btnConfirmClue" type="button" class="btn-primary" onclick="UI.closeClueModal()">收入手札</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 死亡结算全屏仪式弹窗 -->
+  <div id="deathModal" class="modal-backdrop hidden">
+    <div class="modal-card ink-panel" style="border-color: rgba(185, 28, 28, 0.65);">
+      <div class="modal-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span id="deathCode" class="seal-badge">BE1</span>
+            <span id="deathTag" style="font-size:12px;color:#fca5a5;font-weight:600;">死因：过于优秀</span>
+          </div>
+          <h2 id="deathTitle" class="modal-title">天生灵童</h2>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:11px;color:#a8a29e;">百世书翻页</div>
+          <div id="deathPagesInfo" style="font-size:13px;font-weight:700;color:#fcd34d;">残页 100 → 99</div>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="death-box-aftermath">
+          <div class="death-label-red">✦ 第一重 · 死后余波</div>
+          <p id="deathAftermath" class="death-text" style="font-style:italic;"></p>
+        </div>
+
+        <div class="death-box-verdict">
+          <div class="death-label-gold">✦ 第二重 · 百世书判词</div>
+          <p id="deathVerdict" class="death-text death-text-gold"></p>
+        </div>
+
+        <div class="death-box-hint">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;">
+            <div class="death-label-gold" style="margin:0;">✦ 第三重 · 焚页叩天机（防卡关秘策）</div>
+            <button id="btnBurnHint" type="button" class="btn-tool btn-tool-gold" onclick="Game.burnPageForHint()">
+              🔥 焚页叩天机（耗 1 页百世书）
+            </button>
+          </div>
+          <div id="deathDirectHint" class="hidden" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(245,158,11,0.22);font-size:13px;line-height:1.7;color:#fde68a;"></div>
+        </div>
+
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+            <div style="font-size:13.5px;font-weight:700;color:#fde68a;">百世书结算 · 重开四选一</div>
+            <span style="font-size:11px;color:#a8a29e;">注：前世情报与记忆功法默认留存</span>
+          </div>
+          <div id="inheritGrid"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div id="inheritSelectedHint" style="font-size:11.5px;color:#a8a29e;line-height:1.4;">请选择一项跨世传承后翻页重开</div>
+        <button id="btnConfirmReincarnate" type="button" class="btn-primary" style="flex-shrink:0;" onclick="Game.confirmReincarnate()">
+          翻动百世书 · 重开一世
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 真结局 / 天道果位谱弹窗 -->
+  <div id="codexModal" class="modal-backdrop hidden">
+    <div class="modal-card ink-panel" style="border-color: rgba(251, 191, 36, 0.6);">
+      <div class="modal-header modal-header-gold">
+        <div>
+          <span class="seal-badge seal-gold" style="margin-bottom:4px;">第一章 · 地狱真通关</span>
+          <h2 class="modal-title">天道果位谱（初探） · 欺天窃命</h2>
+        </div>
+        <button id="btnCloseCodexHeader" type="button" class="modal-close-btn" aria-label="关闭果位谱" onclick="UI.closeCodex()">✕</button>
+      </div>
+      <div class="modal-body" style="font-size:13.5px;line-height:1.75;">
+        <p style="margin:0;color:#fef3c7;">
+          你握紧【先天混元一炁神符】，成功骗过了补天峰主（筑基真人）的隔空杀子因果推算，将刘信炼成996画符幡灵，并在第一世的起点撕开了初圣魔门背后庞大棋局的第一道裂缝。
+        </p>
+        <div class="codex-grid">
+          <div class="ink-card">
+            <div style="color:#fcd34d;font-weight:700;margin-bottom:4px;">✦ 城头土 · 隐世至尊果位</div>
+            <p style="margin:0;font-size:12px;color:#a8a29e;">对应三品真功《九变化龙决》《万乘御龙飞升宝卷》。盘龙岛之机缘早已被补天峰主内定予赵旭河，欲夺此道，必先遮蔽因果。</p>
+          </div>
+          <div class="ink-card" style="border-color:rgba(153,27,27,0.5);">
+            <div style="color:#fca5a5;font-weight:700;margin-bottom:4px;">✦ 覆灯火 · 鸿运垂钓局</div>
+            <p style="margin:0;font-size:12px;color:#a8a29e;">功德池十亿彩鱼大奖背后的无形黑手。凡人眼中的“天命之子”萧石叶，不过是真君转世投进鱼塘的一枚鱼饵。</p>
+          </div>
+          <div class="ink-card">
+            <div style="color:#e7e5e4;font-weight:700;margin-bottom:4px;">✦ 石榴木 · 补天峰主道途</div>
+            <p style="margin:0;font-size:12px;color:#a8a29e;">陈太合（补天峰主）暗中筹谋的筑基道途。其子陈信安真灵已散，你手握其因果暗线，第二章将正式与峰主展开博弈。</p>
+          </div>
+          <div class="ink-card" style="border-color:rgba(107,33,168,0.5);">
+            <div style="color:#d8b4fe;font-weight:700;margin-bottom:4px;">✦ 第二章预告 · 牛马与骷髅山</div>
+            <p style="margin:0;font-size:12px;color:#a8a29e;">即将解锁：替死阴傀期货暴雷做空、云妙清（纯爱/采补双线）与癫公兄长云妙真单挑、飞霞师兄的月下情劫钓鱼局！</p>
+          </div>
+        </div>
+        <div class="death-box-hint" style="font-size:12px;color:#fde68a;">
+          你已解锁全部核心底牌，仍可继续留在第一章收集剩余死亡结局（BE0–BE7b）与全部 BL 人物暗账！
+        </div>
+      </div>
+      <div class="modal-footer modal-footer-end">
+        <button id="btnCloseCodexFooter" type="button" class="btn-primary" onclick="UI.closeCodex()">继续探索其余分支</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自定义确认重置弹窗 -->
+  <div id="resetModal" class="modal-backdrop hidden">
+    <div class="modal-card modal-card-narrow ink-panel" style="border-color: rgba(153, 27, 27, 0.7);">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color:#fca5a5;">焚毁百世书存档？</h3>
+        <button type="button" class="modal-close-btn" aria-label="关闭" onclick="UI.closeResetModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin:0;font-size:14px;line-height:1.75;color:#d6d3d1;">
+          此举将清空所有已解锁的跨世天赋、宝物、魔门手札线索与结局记录，百世书将重置回第 1 世（100 页）。确定要重头再来吗？
+        </p>
+      </div>
+      <div class="modal-footer modal-footer-end">
+        <button id="btnCancelReset" type="button" class="btn-secondary" onclick="UI.closeResetModal()">暂且作罢</button>
+        <button id="btnConfirmReset" type="button" class="btn-danger" onclick="Game.hardReset()">确认焚毁重置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 燃尽百世书 Game Over 弹窗 -->
+  <div id="gameOverModal" class="modal-backdrop hidden">
+    <div class="modal-card modal-card-narrow ink-panel" style="border-color: rgba(185, 28, 28, 0.85);">
+      <div class="modal-body" style="text-align:center;padding:24px 20px;">
+        <div style="font-size:38px;">🕯️</div>
+        <h2 style="margin:0;font-size:22px;font-weight:900;color:#f87171;letter-spacing:0.12em;">百世书燃尽 · 道消身陨</h2>
+        <p style="margin:0;font-size:14px;line-height:1.75;color:#d6d3d1;">
+          百页天机悉数焚毁，命火彻底熄灭。这初圣魔门果真是吃人不吐骨头的无底深渊，纵有百世轮回，也未能勘破一线生机。
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="btnRestartGameOver" type="button" class="btn-danger btn-full" onclick="Game.hardReset()">另起一册 · 重铸百世书</button>
+      </div>
+    </div>
+  </div>
+
+  <script>/* __INLINE_JS__ */</script>
+</body>
+</html>

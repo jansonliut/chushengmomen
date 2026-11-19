@@ -5,6 +5,12 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "scan": "node tools/scan.js"
+    "scan": "node tools/scan.js",
+    "build": "node tools/build.js",
+    "preview": "node tools/preview.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "^1.65.1"
   }
 }
